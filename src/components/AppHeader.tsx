@@ -1,5 +1,6 @@
 import { Bell, LogOut } from "lucide-react";
 import { Button } from "./ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { useNavigate } from "react-router-dom";
 import {
@@ -13,24 +14,26 @@ import { ScrollArea } from "./ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 
 export default function AppHeader() {
-  const { currentUser, logout, notifications, markNotificationAsRead } = useApp();
+  const { user, signOut, userRole } = useAuth();
+  const { notifications, markNotificationAsRead, profiles } = useApp();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate("/");
   };
 
+  const userProfile = profiles.find((p) => p.id === user?.id);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <header className="h-16 border-b bg-card flex items-center justify-between px-6 shadow-sm">
       <div>
         <h2 className="text-lg font-semibold">
-          Welcome back, {currentUser?.name}
+          Welcome back, {userProfile?.name}
         </h2>
         <p className="text-xs text-muted-foreground capitalize">
-          {currentUser?.role} Account
+          {userRole} Account
         </p>
       </div>
 
@@ -70,7 +73,7 @@ export default function AppHeader() {
                     <div className="flex-1">
                       <p className="text-sm">{notif.message}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {formatDistanceToNow(new Date(notif.createdAt), {
+                        {formatDistanceToNow(new Date(notif.created_at), {
                           addSuffix: true,
                         })}
                       </p>

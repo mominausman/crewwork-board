@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Plus, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import TaskCard from "@/components/TaskCard";
 import TaskFormDialog from "@/components/TaskFormDialog";
 import TaskDetailsDialog from "@/components/TaskDetailsDialog";
-import { Task, TaskStatus, TaskPriority } from "@/types";
 import {
   Select,
   SelectContent,
@@ -16,21 +16,34 @@ import {
 } from "@/components/ui/select";
 import ProgressOverview from "@/components/ProgressOverview";
 
+interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  assigned_to: string;
+  deadline: string;
+  status: string;
+  priority: string;
+  created_by: string;
+}
+
 export default function Dashboard() {
-  const { tasks, currentUser, users } = useApp();
+  const { tasks, profiles } = useApp();
+  const { userRole } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all");
-  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const canCreateTask = currentUser?.role === "admin" || currentUser?.role === "manager";
+  const canCreateTask = userRole === "admin" || userRole === "manager";
 
   const filteredTasks = tasks.filter((task) => {
+    const assignedUser = profiles.find((p) => p.id === task.assigned_to);
     const matchesSearch =
       task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      task.assignedToName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      assignedUser?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.deadline.includes(searchQuery);
 
     const matchesStatus = statusFilter === "all" || task.status === statusFilter;
@@ -79,7 +92,7 @@ export default function Dashboard() {
           />
         </div>
         <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40">
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Status" />
@@ -92,7 +105,7 @@ export default function Dashboard() {
             </SelectContent>
           </Select>
 
-          <Select value={priorityFilter} onValueChange={(v) => setPriorityFilter(v as any)}>
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
             <SelectTrigger className="w-40">
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Priority" />

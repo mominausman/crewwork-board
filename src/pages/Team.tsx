@@ -4,10 +4,17 @@ import { Badge } from "@/components/ui/badge";
 import { User, Mail } from "lucide-react";
 
 export default function Team() {
-  const { users, tasks } = useApp();
+  const { profiles, tasks } = useApp();
 
   const getUserTaskCount = (userId: string) => {
-    return tasks.filter((task) => task.assignedTo === userId).length;
+    return tasks.filter((task) => task.assigned_to === userId).length;
+  };
+
+  // Get role for each user
+  const getUserRole = (userId: string) => {
+    // This would need to be fetched from user_roles table
+    // For now, returning a placeholder
+    return "member";
   };
 
   const roleColors = {
@@ -25,7 +32,7 @@ export default function Team() {
         </p>
       </div>
 
-      {users.length === 0 ? (
+      {profiles.length === 0 ? (
         <Card className="shadow-card">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -39,35 +46,38 @@ export default function Team() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {users.map((user) => (
-            <Card key={user.id} className="shadow-card hover:shadow-lg transition-all">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg">{user.name}</h3>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Mail className="h-3 w-3" />
-                        {user.email}
-                      </p>
+          {profiles.map((profile) => {
+            const role = getUserRole(profile.id);
+            return (
+              <Card key={profile.id} className="shadow-card hover:shadow-lg transition-all">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-lg">{profile.name}</h3>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Mail className="h-3 w-3" />
+                          {profile.email}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center justify-between pt-3 border-t">
-                  <Badge className={roleColors[user.role]}>
-                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {getUserTaskCount(user.id)} tasks
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="flex items-center justify-between pt-3 border-t">
+                    <Badge className={roleColors[role as keyof typeof roleColors]}>
+                      {role.charAt(0).toUpperCase() + role.slice(1)}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {getUserTaskCount(profile.id)} tasks
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

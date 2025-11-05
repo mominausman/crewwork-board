@@ -4,12 +4,23 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { ScrollArea } from "./ui/scroll-area";
-import { Task } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { format, formatDistanceToNow } from "date-fns";
 import { Calendar, User, MessageSquare, Paperclip, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  assigned_to: string;
+  deadline: string;
+  status: string;
+  priority: string;
+  created_by: string;
+}
 
 interface TaskDetailsDialogProps {
   open: boolean;
@@ -18,14 +29,15 @@ interface TaskDetailsDialogProps {
 }
 
 export default function TaskDetailsDialog({ open, onOpenChange, task }: TaskDetailsDialogProps) {
-  const { comments, addComment, currentUser, users, updateTask } = useApp();
+  const { comments, addComment, profiles, updateTask } = useApp();
+  const { user, userRole } = useAuth();
   const [newComment, setNewComment] = useState("");
 
   if (!task) return null;
 
-  const taskComments = comments.filter((c) => c.taskId === task.id);
-  const assignedUser = users.find((u) => u.id === task.assignedTo);
-  const canComplete = currentUser?.id === task.assignedTo || currentUser?.role === "admin" || currentUser?.role === "manager";
+  const taskComments = comments.filter((c) => c.task_id === task.id);
+  const assignedUser = profiles.find((u) => u.id === task.assigned_to);
+  const canComplete = user?.id === task.assigned_to || userRole === "admin" || userRole === "manager";
 
   const statusColors = {
     pending: "bg-status-pending text-white",
@@ -40,22 +52,19 @@ export default function TaskDetailsDialog({ open, onOpenChange, task }: TaskDeta
   };
 
   const handleAddComment = () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || !user) return;
 
     addComment({
-      taskId: task.id,
-      userId: currentUser?.id || "",
-      userName: currentUser?.name || "",
+      task_id: task.id,
+      user_id: user.id,
       content: newComment.trim(),
     });
 
     setNewComment("");
-    toast.success("Comment added");
   };
 
   const handleMarkComplete = () => {
     updateTask(task.id, { status: "completed" });
-    toast.success("Task marked as completed");
   };
 
   return (
@@ -68,10 +77,10 @@ export default function TaskDetailsDialog({ open, onOpenChange, task }: TaskDeta
         <ScrollArea className="max-h-[calc(90vh-8rem)]">
           <div className="space-y-6 pr-4">
             <div className="flex gap-2">
-              <Badge className={cn("capitalize", statusColors[task.status])}>
+              <Badge className={cn("capitalize", statusColors[task.status as keyof typeof statusColors])}>
                 {task.status.replace("-", " ")}
               </Badge>
-              <Badge className={cn("capitalize", priorityColors[task.priority])}>
+              <Badge className={cn("capitalize", priorityColors[task.priority as keyof typeof priorityColors])}>
                 {task.priority}
               </Badge>
             </div>
@@ -116,17 +125,20 @@ export default function TaskDetailsDialog({ open, onOpenChange, task }: TaskDeta
                     No comments yet. Be the first to comment!
                   </p>
                 ) : (
-                  taskComments.map((comment) => (
-                    <div key={comment.id} className="bg-muted/30 rounded-lg p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">{comment.userName}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
-                        </span>
+                  taskComments.map((comment) => {
+                    const commentUser = profiles.find((p) => p.id === comment.user_id);
+                    return (
+                      <div key={comment.id} className="bg-muted/30 rounded-lg p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{commentUser?.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                          </span>
+                        </div>
+                        <p className="text-sm">{comment.content}</p>
                       </div>
-                      <p className="text-sm">{comment.content}</p>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
 

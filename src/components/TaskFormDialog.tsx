@@ -11,9 +11,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
-import { Task, TaskStatus, TaskPriority } from "@/types";
 import { toast } from "sonner";
+
+interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  assigned_to: string;
+  deadline: string;
+  status: string;
+  priority: string;
+  created_by: string;
+}
 
 interface TaskFormDialogProps {
   open: boolean;
@@ -22,22 +33,23 @@ interface TaskFormDialogProps {
 }
 
 export default function TaskFormDialog({ open, onOpenChange, task }: TaskFormDialogProps) {
-  const { addTask, updateTask, users, currentUser } = useApp();
+  const { addTask, updateTask, profiles } = useApp();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    assignedTo: "",
+    assigned_to: "",
     deadline: "",
-    status: "pending" as TaskStatus,
-    priority: "medium" as TaskPriority,
+    status: "pending",
+    priority: "medium",
   });
 
   useEffect(() => {
     if (task) {
       setFormData({
         title: task.title,
-        description: task.description,
-        assignedTo: task.assignedTo,
+        description: task.description || "",
+        assigned_to: task.assigned_to,
         deadline: task.deadline,
         status: task.status,
         priority: task.priority,
@@ -46,7 +58,7 @@ export default function TaskFormDialog({ open, onOpenChange, task }: TaskFormDia
       setFormData({
         title: "",
         description: "",
-        assignedTo: "",
+        assigned_to: "",
         deadline: "",
         status: "pending",
         priority: "medium",
@@ -54,23 +66,21 @@ export default function TaskFormDialog({ open, onOpenChange, task }: TaskFormDia
     }
   }, [task, open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title.trim() || !formData.assignedTo || !formData.deadline) {
+    if (!formData.title.trim() || !formData.assigned_to || !formData.deadline) {
       toast.error("Please fill in all required fields");
       return;
     }
 
     if (task) {
-      updateTask(task.id, formData);
-      toast.success("Task updated successfully");
+      await updateTask(task.id, formData);
     } else {
-      addTask({
+      await addTask({
         ...formData,
-        createdBy: currentUser?.id || "",
+        created_by: user?.id || "",
       });
-      toast.success("Task created successfully");
     }
 
     onOpenChange(false);
@@ -106,18 +116,18 @@ export default function TaskFormDialog({ open, onOpenChange, task }: TaskFormDia
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="assignedTo">Assign To *</Label>
+              <Label htmlFor="assigned_to">Assign To *</Label>
               <Select
-                value={formData.assignedTo}
-                onValueChange={(v) => setFormData({ ...formData, assignedTo: v })}
+                value={formData.assigned_to}
+                onValueChange={(v) => setFormData({ ...formData, assigned_to: v })}
               >
-                <SelectTrigger id="assignedTo">
+                <SelectTrigger id="assigned_to">
                   <SelectValue placeholder="Select user" />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({user.role})
+                  {profiles.map((profile) => (
+                    <SelectItem key={profile.id} value={profile.id}>
+                      {profile.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -140,7 +150,7 @@ export default function TaskFormDialog({ open, onOpenChange, task }: TaskFormDia
               <Label htmlFor="priority">Priority</Label>
               <Select
                 value={formData.priority}
-                onValueChange={(v) => setFormData({ ...formData, priority: v as TaskPriority })}
+                onValueChange={(v) => setFormData({ ...formData, priority: v })}
               >
                 <SelectTrigger id="priority">
                   <SelectValue />
@@ -157,7 +167,7 @@ export default function TaskFormDialog({ open, onOpenChange, task }: TaskFormDia
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(v) => setFormData({ ...formData, status: v as TaskStatus })}
+                onValueChange={(v) => setFormData({ ...formData, status: v })}
               >
                 <SelectTrigger id="status">
                   <SelectValue />

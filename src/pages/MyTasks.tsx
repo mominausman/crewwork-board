@@ -1,17 +1,29 @@
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import TaskCard from "@/components/TaskCard";
 import TaskDetailsDialog from "@/components/TaskDetailsDialog";
-import { Task } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClipboardList } from "lucide-react";
 
+interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  assigned_to: string;
+  deadline: string;
+  status: string;
+  priority: string;
+  created_by: string;
+}
+
 export default function MyTasks() {
-  const { tasks, currentUser } = useApp();
+  const { tasks } = useApp();
+  const { user } = useAuth();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
 
-  const myTasks = tasks.filter((task) => task.assignedTo === currentUser?.id);
+  const myTasks = tasks.filter((task) => task.assigned_to === user?.id);
 
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);

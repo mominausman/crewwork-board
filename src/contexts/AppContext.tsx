@@ -1,194 +1,308 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { User, Task, Comment, Notification, UserRole } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./AuthContext";
+import { toast } from "sonner";
+
+interface Profile {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  assigned_to: string;
+  deadline: string;
+  status: string;
+  priority: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Comment {
+  id: string;
+  task_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+}
+
+interface Notification {
+  id: string;
+  user_id: string;
+  message: string;
+  type: string;
+  read: boolean;
+  created_at: string;
+}
 
 interface AppContextType {
-  currentUser: User | null;
-  users: User[];
+  profiles: Profile[];
   tasks: Task[];
   comments: Comment[];
   notifications: Notification[];
-  login: (role: UserRole, name: string) => void;
-  logout: () => void;
-  addUser: (user: Omit<User, "id">) => void;
-  addTask: (task: Omit<Task, "id" | "createdAt" | "updatedAt">) => void;
-  updateTask: (id: string, task: Partial<Task>) => void;
-  deleteTask: (id: string) => void;
-  addComment: (comment: Omit<Comment, "id" | "createdAt">) => void;
-  addNotification: (notification: Omit<Notification, "id" | "createdAt" | "read">) => void;
-  markNotificationAsRead: (id: string) => void;
+  loading: boolean;
+  addTask: (task: Omit<Task, "id" | "created_at" | "updated_at">) => Promise<void>;
+  updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  addComment: (comment: Omit<Comment, "id" | "created_at">) => Promise<void>;
+  markNotificationAsRead: (id: string) => Promise<void>;
+  refreshData: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
+  const { user } = useAuth();
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Load from localStorage
-  useEffect(() => {
-    const savedUser = localStorage.getItem("currentUser");
-    const savedUsers = localStorage.getItem("users");
-    const savedTasks = localStorage.getItem("tasks");
-    const savedComments = localStorage.getItem("comments");
-    const savedNotifications = localStorage.getItem("notifications");
+  // Fetch all data
+  const refreshData = async () => {
+    if (!user) return;
 
-    if (savedUser) setCurrentUser(JSON.parse(savedUser));
-    if (savedUsers) setUsers(JSON.parse(savedUsers));
-    if (savedTasks) setTasks(JSON.parse(savedTasks));
-    if (savedComments) setComments(JSON.parse(savedComments));
-    if (savedNotifications) setNotifications(JSON.parse(savedNotifications));
-  }, []);
+    try {
+      setLoading(true);
 
-  // Save to localStorage
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+      // Fetch profiles
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("*");
+      if (profilesData) setProfiles(profilesData);
+
+      // Fetch tasks
+      const { data: tasksData } = await supabase
+        .from("tasks")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (tasksData) setTasks(tasksData);
+
+      // Fetch comments
+      const { data: commentsData } = await supabase
+        .from("comments")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (commentsData) setComments(commentsData);
+
+      // Fetch notifications
+      const { data: notificationsData } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (notificationsData) setNotifications(notificationsData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
     }
-  }, [currentUser]);
+  };
 
+  // Initial data fetch
   useEffect(() => {
-    localStorage.setItem("users", JSON.stringify(users));
-  }, [users]);
-
-  useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
-
-  useEffect(() => {
-    localStorage.setItem("comments", JSON.stringify(comments));
-  }, [comments]);
-
-  useEffect(() => {
-    localStorage.setItem("notifications", JSON.stringify(notifications));
-  }, [notifications]);
-
-  const login = (role: UserRole, name: string) => {
-    const existingUser = users.find((u) => u.name === name && u.role === role);
-    if (existingUser) {
-      setCurrentUser(existingUser);
+    if (user) {
+      refreshData();
     } else {
-      const newUser: User = {
-        id: Date.now().toString(),
-        name,
-        email: `${name.toLowerCase().replace(/\s/g, ".")}@company.com`,
-        role,
-      };
-      setUsers([...users, newUser]);
-      setCurrentUser(newUser);
+      setProfiles([]);
+      setTasks([]);
+      setComments([]);
+      setNotifications([]);
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Real-time subscriptions
+  useEffect(() => {
+    if (!user) return;
+
+    // Subscribe to tasks changes
+    const tasksChannel = supabase
+      .channel("tasks-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tasks",
+        },
+        () => {
+          refreshData();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to comments changes
+    const commentsChannel = supabase
+      .channel("comments-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "comments",
+        },
+        () => {
+          refreshData();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to notifications changes
+    const notificationsChannel = supabase
+      .channel("notifications-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          refreshData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(tasksChannel);
+      supabase.removeChannel(commentsChannel);
+      supabase.removeChannel(notificationsChannel);
+    };
+  }, [user]);
+
+  const addTask = async (task: Omit<Task, "id" | "created_at" | "updated_at">) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase.from("tasks").insert([{
+        title: task.title,
+        description: task.description,
+        assigned_to: task.assigned_to,
+        deadline: task.deadline,
+        status: task.status as any,
+        priority: task.priority as any,
+        created_by: task.created_by,
+      }]);
+
+      if (error) throw error;
+
+      // Create notification for assigned user
+      const assignedProfile = profiles.find((p) => p.id === task.assigned_to);
+      if (assignedProfile) {
+        await supabase.from("notifications").insert([
+          {
+            user_id: task.assigned_to,
+            message: `New task "${task.title}" assigned to you`,
+            type: "task-created",
+          },
+        ]);
+      }
+
+      toast.success("Task created successfully");
+    } catch (error: any) {
+      console.error("Error creating task:", error);
+      toast.error(error.message || "Failed to create task");
     }
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem("currentUser");
-  };
+  const updateTask = async (id: string, updates: Partial<Task>) => {
+    try {
+      const updateData: any = {};
+      if (updates.title) updateData.title = updates.title;
+      if (updates.description !== undefined) updateData.description = updates.description;
+      if (updates.assigned_to) updateData.assigned_to = updates.assigned_to;
+      if (updates.deadline) updateData.deadline = updates.deadline;
+      if (updates.status) updateData.status = updates.status;
+      if (updates.priority) updateData.priority = updates.priority;
 
-  const addUser = (user: Omit<User, "id">) => {
-    const newUser: User = {
-      ...user,
-      id: Date.now().toString(),
-    };
-    setUsers([...users, newUser]);
-  };
+      const { error } = await supabase
+        .from("tasks")
+        .update(updateData)
+        .eq("id", id);
 
-  const addTask = (task: Omit<Task, "id" | "createdAt" | "updatedAt">) => {
-    const newTask: Task = {
-      ...task,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setTasks([...tasks, newTask]);
-    
-    // Create notification
-    const assignedUser = users.find((u) => u.id === task.assignedTo);
-    addNotification({
-      message: `New task "${task.title}" assigned to ${assignedUser?.name || "you"}`,
-      type: "task-created",
-    });
-  };
+      if (error) throw error;
 
-  const updateTask = (id: string, taskUpdate: Partial<Task>) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id
-          ? { ...task, ...taskUpdate, updatedAt: new Date().toISOString() }
-          : task
-      )
-    );
-    
-    // Create notification for status changes
-    if (taskUpdate.status === "completed") {
-      const task = tasks.find((t) => t.id === id);
-      if (task) {
-        addNotification({
-          message: `Task "${task.title}" has been completed`,
-          type: "task-completed",
-        });
+      // Create notification for status change
+      if (updates.status === "completed") {
+        const task = tasks.find((t) => t.id === id);
+        if (task) {
+          await supabase.from("notifications").insert([
+            {
+              user_id: task.created_by,
+              message: `Task "${task.title}" has been completed`,
+              type: "task-completed",
+            },
+          ]);
+        }
       }
-    } else if (taskUpdate.status || taskUpdate.assignedTo) {
-      const task = tasks.find((t) => t.id === id);
-      if (task) {
-        addNotification({
-          message: `Task "${task.title}" has been updated`,
-          type: "task-updated",
-        });
-      }
+
+      toast.success("Task updated successfully");
+    } catch (error: any) {
+      console.error("Error updating task:", error);
+      toast.error(error.message || "Failed to update task");
     }
   };
 
-  const deleteTask = (id: string) => {
-    setTasks(tasks.filter((task) => task.id !== id));
-    setComments(comments.filter((comment) => comment.taskId !== id));
+  const deleteTask = async (id: string) => {
+    try {
+      const { error } = await supabase.from("tasks").delete().eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("Task deleted successfully");
+    } catch (error: any) {
+      console.error("Error deleting task:", error);
+      toast.error(error.message || "Failed to delete task");
+    }
   };
 
-  const addComment = (comment: Omit<Comment, "id" | "createdAt">) => {
-    const newComment: Comment = {
-      ...comment,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-    };
-    setComments([...comments, newComment]);
+  const addComment = async (comment: Omit<Comment, "id" | "created_at">) => {
+    try {
+      const { error } = await supabase.from("comments").insert([comment]);
+
+      if (error) throw error;
+
+      toast.success("Comment added");
+    } catch (error: any) {
+      console.error("Error adding comment:", error);
+      toast.error(error.message || "Failed to add comment");
+    }
   };
 
-  const addNotification = (notification: Omit<Notification, "id" | "createdAt" | "read">) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      read: false,
-    };
-    setNotifications([newNotification, ...notifications]);
-  };
+  const markNotificationAsRead = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("id", id);
 
-  const markNotificationAsRead = (id: string) => {
-    setNotifications(
-      notifications.map((notif) =>
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
+      if (error) throw error;
+    } catch (error: any) {
+      console.error("Error marking notification as read:", error);
+    }
   };
 
   return (
     <AppContext.Provider
       value={{
-        currentUser,
-        users,
+        profiles,
         tasks,
         comments,
         notifications,
-        login,
-        logout,
-        addUser,
+        loading,
         addTask,
         updateTask,
         deleteTask,
         addComment,
-        addNotification,
         markNotificationAsRead,
+        refreshData,
       }}
     >
       {children}

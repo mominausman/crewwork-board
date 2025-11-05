@@ -2,10 +2,21 @@ import { Calendar, Edit, Trash2, User } from "lucide-react";
 import { Card, CardContent, CardFooter } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Task } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+
+interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  assigned_to: string;
+  deadline: string;
+  status: string;
+  priority: string;
+  created_by: string;
+}
 
 interface TaskCardProps {
   task: Task;
@@ -14,10 +25,11 @@ interface TaskCardProps {
 }
 
 export default function TaskCard({ task, onClick, onEdit }: TaskCardProps) {
-  const { currentUser, deleteTask, users } = useApp();
+  const { userRole } = useAuth();
+  const { deleteTask, profiles } = useApp();
 
-  const canEdit = currentUser?.role === "admin" || currentUser?.role === "manager";
-  const assignedUser = users.find((u) => u.id === task.assignedTo);
+  const canEdit = userRole === "admin" || userRole === "manager";
+  const assignedUser = profiles.find((u) => u.id === task.assigned_to);
 
   const statusColors = {
     pending: "bg-status-pending text-white",
@@ -82,10 +94,10 @@ export default function TaskCard({ task, onClick, onEdit }: TaskCardProps) {
         </p>
 
         <div className="flex gap-2">
-          <Badge className={cn("capitalize", statusColors[task.status])}>
+          <Badge className={cn("capitalize", statusColors[task.status as keyof typeof statusColors])}>
             {task.status.replace("-", " ")}
           </Badge>
-          <Badge className={cn("capitalize", priorityColors[task.priority])}>
+          <Badge className={cn("capitalize", priorityColors[task.priority as keyof typeof priorityColors])}>
             {task.priority}
           </Badge>
         </div>
