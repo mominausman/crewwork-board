@@ -1,25 +1,31 @@
 import { LayoutDashboard, CheckSquare, Users, Sparkles } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function AppSidebar() {
+  const { userRole } = useAuth();
+
   const navItems = [
     {
       title: "Dashboard",
       icon: LayoutDashboard,
       href: "/dashboard",
+      roles: ["admin", "manager", "member"],
     },
     {
       title: "My Tasks",
       icon: CheckSquare,
       href: "/my-tasks",
+      roles: ["admin", "manager", "member"],
     },
     {
       title: "Team",
       icon: Users,
       href: "/team",
+      roles: ["admin", "manager"],
     },
-  ];
+  ].filter((item) => userRole && item.roles.includes(userRole));
 
   return (
     <aside className="w-64 bg-sidebar text-sidebar-foreground border-r flex flex-col">

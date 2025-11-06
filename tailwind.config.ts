@@ -75,6 +75,11 @@ export default {
           medium: "hsl(var(--priority-medium))",
           low: "hsl(var(--priority-low))",
         },
+        role: {
+          admin: "hsl(var(--role-admin))",
+          manager: "hsl(var(--role-manager))",
+          member: "hsl(var(--role-member))",
+        },
       },
       boxShadow: {
         card: "var(--shadow-card)",

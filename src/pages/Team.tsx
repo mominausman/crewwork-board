@@ -1,6 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { useApp } from "@/contexts/AppContext";
-import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
@@ -8,26 +7,56 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { User, Mail } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+import RoleBadge from "@/components/RoleBadge";
 
 export default function Team() {
   const { profiles, tasks } = useApp();
+  const { userRole } = useAuth();
+  const [userRoles, setUserRoles] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchUserRoles = async () => {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+      
+      if (!error && data) {
+        const rolesMap = data.reduce((acc, item) => {
+          acc[item.user_id] = item.role;
+          return acc;
+        }, {} as Record<string, string>);
+        setUserRoles(rolesMap);
+      }
+    };
+
+    fetchUserRoles();
+  }, []);
 
   const getUserTaskCount = (userId: string) => {
     return tasks.filter((task) => task.assigned_to === userId).length;
   };
 
-  // Get role for each user
-  const getUserRole = (userId: string) => {
-    // This would need to be fetched from user_roles table
-    // For now, returning a placeholder
-    return "member";
-  };
-
-  const roleColors = {
-    admin: "bg-destructive text-destructive-foreground",
-    manager: "bg-primary text-primary-foreground",
-    member: "bg-secondary text-secondary-foreground",
-  };
+  // Check if user has permission to view team
+  if (userRole === "member") {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Card className="shadow-card max-w-md">
+          <CardContent className="flex flex-col items-center justify-center py-16 px-6">
+            <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+              <User className="h-8 w-8 text-destructive" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Access Restricted</h3>
+            <p className="text-muted-foreground text-center">
+              You don't have access to view team details. Please contact your manager or admin.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -53,7 +82,7 @@ export default function Team() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {profiles.map((profile) => {
-            const role = getUserRole(profile.id);
+            const role = userRoles[profile.id] || "member";
             return (
               <Card key={profile.id} className="shadow-card hover:shadow-lg transition-all">
                 <CardContent className="p-6 space-y-4">
@@ -82,9 +111,7 @@ export default function Team() {
                   </div>
 
                   <div className="flex items-center justify-between pt-3 border-t">
-                    <Badge className={roleColors[role as keyof typeof roleColors]}>
-                      {role.charAt(0).toUpperCase() + role.slice(1)}
-                    </Badge>
+                    <RoleBadge role={role} />
                     <span className="text-sm text-muted-foreground">
                       {getUserTaskCount(profile.id)} tasks
                     </span>
