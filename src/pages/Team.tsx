@@ -1,6 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { useApp } from "@/contexts/AppContext";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { User, Mail } from "lucide-react";
 
 export default function Team() {
@@ -52,16 +58,25 @@ export default function Team() {
               <Card key={profile.id} className="shadow-card hover:shadow-lg transition-all">
                 <CardContent className="p-6 space-y-4">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                         <User className="h-6 w-6 text-primary" />
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">{profile.name}</h3>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
-                          {profile.email}
-                        </p>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-lg truncate">{profile.name}</h3>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <p className="text-sm text-muted-foreground flex items-center gap-1 cursor-help">
+                                <Mail className="h-3 w-3 flex-shrink-0" />
+                                <span className="truncate">{profile.email}</span>
+                              </p>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{profile.email}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
                   </div>
