@@ -25,6 +25,8 @@ interface Task {
   status: string;
   priority: string;
   created_by: string;
+  attachment_url?: string | null;
+  completion_note?: string | null;
 }
 
 export default function Dashboard() {
@@ -63,16 +65,22 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Task Dashboard</h1>
+          <h1 className="text-3xl font-bold">
+            {userRole === "admin" && "Admin Dashboard"}
+            {userRole === "manager" && "Manager Dashboard"}
+            {userRole === "member" && "Task Dashboard"}
+          </h1>
           <p className="text-muted-foreground mt-1">
-            Manage and track all team tasks
+            {userRole === "admin" && "Full system overview and user management"}
+            {userRole === "manager" && "Create, assign, and track team tasks"}
+            {userRole === "member" && "Manage and track all team tasks"}
           </p>
         </div>
         {canCreateTask && (
-          <Button onClick={() => setIsTaskFormOpen(true)}>
+          <Button onClick={() => setIsTaskFormOpen(true)} className="hover-scale">
             <Plus className="h-4 w-4 mr-2" />
             New Task
           </Button>
@@ -121,7 +129,7 @@ export default function Dashboard() {
       </div>
 
       {filteredTasks.length === 0 ? (
-        <div className="text-center py-16">
+        <div className="text-center py-16 animate-fade-in">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
             <Plus className="h-8 w-8 text-primary" />
           </div>
@@ -134,14 +142,14 @@ export default function Dashboard() {
               : "Try adjusting your search or filters"}
           </p>
           {canCreateTask && tasks.length === 0 && (
-            <Button onClick={() => setIsTaskFormOpen(true)}>
+            <Button onClick={() => setIsTaskFormOpen(true)} className="hover-scale">
               <Plus className="h-4 w-4 mr-2" />
               Create First Task
             </Button>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
           {filteredTasks.map((task) => (
             <TaskCard
               key={task.id}

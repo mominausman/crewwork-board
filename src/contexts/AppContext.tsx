@@ -20,6 +20,8 @@ interface Task {
   created_by: string;
   created_at: string;
   updated_at: string;
+  attachment_url?: string | null;
+  completion_note?: string | null;
 }
 
 interface Comment {

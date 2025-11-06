@@ -7,9 +7,9 @@ import { ScrollArea } from "./ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { format, formatDistanceToNow } from "date-fns";
-import { Calendar, User, MessageSquare, Paperclip, CheckCircle2 } from "lucide-react";
+import { Calendar, User, MessageSquare, Paperclip, Download, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import TaskCompletionDialog from "./TaskCompletionDialog";
 
 interface Task {
   id: string;
@@ -20,6 +20,8 @@ interface Task {
   status: string;
   priority: string;
   created_by: string;
+  attachment_url?: string | null;
+  completion_note?: string | null;
 }
 
 interface TaskDetailsDialogProps {
@@ -29,9 +31,10 @@ interface TaskDetailsDialogProps {
 }
 
 export default function TaskDetailsDialog({ open, onOpenChange, task }: TaskDetailsDialogProps) {
-  const { comments, addComment, profiles, updateTask } = useApp();
+  const { comments, addComment, profiles } = useApp();
   const { user, userRole } = useAuth();
   const [newComment, setNewComment] = useState("");
+  const [isCompletionDialogOpen, setIsCompletionDialogOpen] = useState(false);
 
   if (!task) return null;
 
@@ -63,8 +66,10 @@ export default function TaskDetailsDialog({ open, onOpenChange, task }: TaskDeta
     setNewComment("");
   };
 
-  const handleMarkComplete = () => {
-    updateTask(task.id, { status: "completed" });
+  const handleDownloadAttachment = () => {
+    if (task.attachment_url) {
+      window.open(task.attachment_url, "_blank");
+    }
   };
 
   return (
@@ -88,7 +93,7 @@ export default function TaskDetailsDialog({ open, onOpenChange, task }: TaskDeta
             <div className="space-y-4">
               <div>
                 <h4 className="font-semibold mb-2">Description</h4>
-                <p className="text-muted-foreground">{task.description}</p>
+                <p className="text-muted-foreground">{task.description || "No description provided"}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -103,11 +108,40 @@ export default function TaskDetailsDialog({ open, onOpenChange, task }: TaskDeta
                   <span className="font-medium">{format(new Date(task.deadline), "MMM dd, yyyy")}</span>
                 </div>
               </div>
+
+              {task.completion_note && (
+                <div className="bg-status-completed/10 border border-status-completed/20 rounded-lg p-4">
+                  <h4 className="font-semibold mb-2 text-sm flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Completion Note
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{task.completion_note}</p>
+                </div>
+              )}
+
+              {task.attachment_url && (
+                <div className="bg-muted/50 border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Paperclip className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Attachment</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadAttachment}
+                    >
+                      <Download className="h-3.5 w-3.5 mr-2" />
+                      View/Download
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {task.status !== "completed" && canComplete && (
-              <Button onClick={handleMarkComplete} className="w-full">
-                <CheckCircle2 className="h-4 w-4 mr-2" />
+              <Button onClick={() => setIsCompletionDialogOpen(true)} className="w-full">
+                <Paperclip className="h-4 w-4 mr-2" />
                 Mark as Completed
               </Button>
             )}
@@ -149,12 +183,9 @@ export default function TaskDetailsDialog({ open, onOpenChange, task }: TaskDeta
                   onChange={(e) => setNewComment(e.target.value)}
                   rows={3}
                 />
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" disabled>
-                    <Paperclip className="h-4 w-4 mr-2" />
-                    Attach File (Coming Soon)
-                  </Button>
+                <div className="flex justify-end">
                   <Button size="sm" onClick={handleAddComment} disabled={!newComment.trim()}>
+                    <MessageSquare className="h-4 w-4 mr-2" />
                     Post Comment
                   </Button>
                 </div>
@@ -163,6 +194,15 @@ export default function TaskDetailsDialog({ open, onOpenChange, task }: TaskDeta
           </div>
         </ScrollArea>
       </DialogContent>
+
+      {task && (
+        <TaskCompletionDialog
+          open={isCompletionDialogOpen}
+          onOpenChange={setIsCompletionDialogOpen}
+          taskId={task.id}
+          taskTitle={task.title}
+        />
+      )}
     </Dialog>
   );
 }

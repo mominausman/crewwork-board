@@ -1,4 +1,4 @@
-import { Calendar, Edit, Trash2, User } from "lucide-react";
+import { Calendar, Edit, Trash2, User, Paperclip } from "lucide-react";
 import { Card, CardContent, CardFooter } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -16,6 +16,8 @@ interface Task {
   status: string;
   priority: string;
   created_by: string;
+  attachment_url?: string | null;
+  completion_note?: string | null;
 }
 
 interface TaskCardProps {
@@ -57,14 +59,21 @@ export default function TaskCard({ task, onClick, onEdit }: TaskCardProps) {
 
   return (
     <Card
-      className="hover:shadow-lg transition-all cursor-pointer group shadow-card"
+      className="hover:shadow-lg transition-all duration-200 cursor-pointer group shadow-card hover-scale"
       onClick={onClick}
     >
       <CardContent className="p-5 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-primary transition-colors">
-            {task.title}
-          </h3>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-primary transition-colors">
+                {task.title}
+              </h3>
+              {task.attachment_url && (
+                <Paperclip className="h-4 w-4 text-primary shrink-0" />
+              )}
+            </div>
+          </div>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             {canEdit && (
               <>
@@ -90,14 +99,20 @@ export default function TaskCard({ task, onClick, onEdit }: TaskCardProps) {
         </div>
 
         <p className="text-sm text-muted-foreground line-clamp-2">
-          {task.description}
+          {task.description || "No description"}
         </p>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Badge className={cn("capitalize", statusColors[task.status as keyof typeof statusColors])}>
+            {task.status === "completed" && "🟢 "}
+            {task.status === "in-progress" && "🟡 "}
+            {task.status === "pending" && "⚪ "}
             {task.status.replace("-", " ")}
           </Badge>
           <Badge className={cn("capitalize", priorityColors[task.priority as keyof typeof priorityColors])}>
+            {task.priority === "high" && "🔴 "}
+            {task.priority === "medium" && "🟠 "}
+            {task.priority === "low" && "🔵 "}
             {task.priority}
           </Badge>
         </div>
