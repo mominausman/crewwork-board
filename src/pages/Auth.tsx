@@ -62,120 +62,128 @@ export default function Auth() {
   ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-primary/5 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center space-y-2">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/10 p-4 relative overflow-hidden">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]" />
+      
+      <Card className="w-full max-w-md shadow-2xl border-0 backdrop-blur-sm bg-card/95 relative z-10">
+        <CardHeader className="text-center space-y-4 pb-6">
           <div className="flex justify-center mb-2">
-            <div className="h-12 w-12 rounded-lg bg-primary flex items-center justify-center">
-              <CheckSquare className="h-7 w-7 text-primary-foreground" />
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg animate-fade-in hover:scale-110 transition-transform duration-300">
+              <CheckSquare className="h-8 w-8 text-primary-foreground" />
             </div>
           </div>
-          <CardTitle className="text-2xl">Team Task Manager</CardTitle>
-          <CardDescription>
-            {isSignUp ? "Create your account" : "Sign in to your account"}
+          <CardTitle className="text-3xl font-semibold tracking-tight">Team Task Manager</CardTitle>
+          <CardDescription className="text-base">
+            {isSignUp ? "Create your account to get started" : "Welcome back! Sign in to continue"}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-2">
           <Tabs value={isSignUp ? "signup" : "signin"} onValueChange={(v) => setIsSignUp(v === "signup")}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 h-11">
+              <TabsTrigger value="signin" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200">Sign In</TabsTrigger>
+              <TabsTrigger value="signup" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200">Sign Up</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
+            <TabsContent value="signin" className="mt-6">
+              <form onSubmit={handleSignIn} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
+                  <Label htmlFor="signin-email" className="text-sm font-medium">Email</Label>
                   <Input
                     id="signin-email"
                     type="email"
-                    placeholder="your@email.com"
+                    placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    className="h-11 bg-background/50 border-border/50 focus:border-primary focus:bg-background transition-all duration-200"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
+                  <Label htmlFor="signin-password" className="text-sm font-medium">Password</Label>
                   <Input
                     id="signin-password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className="h-11 bg-background/50 border-border/50 focus:border-primary focus:bg-background transition-all duration-200"
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full h-11 font-medium shadow-sm hover:shadow-md transition-all duration-200">
                   Sign In
                 </Button>
               </form>
             </TabsContent>
 
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
+            <TabsContent value="signup" className="mt-6">
+              <form onSubmit={handleSignUp} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Name</Label>
+                  <Label htmlFor="signup-name" className="text-sm font-medium">Name</Label>
                   <Input
                     id="signup-name"
-                    placeholder="Your name"
+                    placeholder="John Doe"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    className="h-11 bg-background/50 border-border/50 focus:border-primary focus:bg-background transition-all duration-200"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email" className="text-sm font-medium">Email</Label>
                   <Input
                     id="signup-email"
                     type="email"
-                    placeholder="your@email.com"
+                    placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    className="h-11 bg-background/50 border-border/50 focus:border-primary focus:bg-background transition-all duration-200"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
                   <Input
                     id="signup-password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="Create a strong password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className="h-11 bg-background/50 border-border/50 focus:border-primary focus:bg-background transition-all duration-200"
                     required
                     minLength={6}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Select Role</Label>
-                  <div className="grid gap-2">
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Select Role</Label>
+                  <div className="grid gap-2.5">
                     {roles.map((role) => (
                       <Card
                         key={role.value}
-                        className={`cursor-pointer transition-all ${
+                        className={`cursor-pointer transition-all duration-200 hover:shadow-sm ${
                           selectedRole === role.value
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:border-primary/50"
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border/50 hover:border-primary/50 bg-background/50"
                         }`}
                         onClick={() => setSelectedRole(role.value)}
                       >
-                        <CardContent className="p-3 flex items-start gap-3">
+                        <CardContent className="p-4 flex items-start gap-3">
                           <div
-                            className={`h-4 w-4 rounded-full border-2 mt-0.5 flex items-center justify-center ${
+                            className={`h-5 w-5 rounded-full border-2 mt-0.5 flex items-center justify-center transition-all duration-200 ${
                               selectedRole === role.value
                                 ? "border-primary bg-primary"
-                                : "border-muted-foreground"
+                                : "border-muted-foreground/50"
                             }`}
                           >
                             {selectedRole === role.value && (
-                              <div className="h-2 w-2 rounded-full bg-primary-foreground" />
+                              <div className="h-2.5 w-2.5 rounded-full bg-primary-foreground" />
                             )}
                           </div>
                           <div className="flex-1">
-                            <h4 className="font-semibold text-sm">{role.title}</h4>
-                            <p className="text-xs text-muted-foreground">
+                            <h4 className="font-semibold text-sm mb-0.5">{role.title}</h4>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
                               {role.description}
                             </p>
                           </div>
@@ -185,7 +193,7 @@ export default function Auth() {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full h-11 font-medium shadow-sm hover:shadow-md transition-all duration-200">
                   Create Account
                 </Button>
               </form>
