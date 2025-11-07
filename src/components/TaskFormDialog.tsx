@@ -14,6 +14,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "sonner";
+import { taskSchema } from "@/lib/validationSchemas";
+import { z } from "zod";
 
 interface Task {
   id: string;
@@ -35,6 +37,7 @@ interface TaskFormDialogProps {
 export default function TaskFormDialog({ open, onOpenChange, task }: TaskFormDialogProps) {
   const { addTask, updateTask, profiles } = useApp();
   const { user } = useAuth();
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -69,21 +72,35 @@ export default function TaskFormDialog({ open, onOpenChange, task }: TaskFormDia
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title.trim() || !formData.assigned_to || !formData.deadline) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    if (task) {
-      await updateTask(task.id, formData);
-    } else {
-      await addTask({
+    try {
+      taskSchema.parse({
         ...formData,
-        created_by: user?.id || "",
+        description: formData.description || null,
       });
-    }
+      setFormErrors({});
 
-    onOpenChange(false);
+      if (task) {
+        await updateTask(task.id, formData);
+      } else {
+        await addTask({
+          ...formData,
+          created_by: user?.id || "",
+        });
+      }
+
+      onOpenChange(false);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const errors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            errors[err.path[0].toString()] = err.message;
+          }
+        });
+        setFormErrors(errors);
+        toast.error("Please fix validation errors");
+      }
+    }
   };
 
   return (
@@ -101,6 +118,7 @@ export default function TaskFormDialog({ open, onOpenChange, task }: TaskFormDia
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="Enter task title"
             />
+            {formErrors.title && <p className="text-sm text-destructive">{formErrors.title}</p>}
           </div>
 
           <div className="space-y-2">
@@ -112,6 +130,7 @@ export default function TaskFormDialog({ open, onOpenChange, task }: TaskFormDia
               placeholder="Enter task description"
               rows={3}
             />
+            {formErrors.description && <p className="text-sm text-destructive">{formErrors.description}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -132,6 +151,7 @@ export default function TaskFormDialog({ open, onOpenChange, task }: TaskFormDia
                   ))}
                 </SelectContent>
               </Select>
+              {formErrors.assigned_to && <p className="text-sm text-destructive">{formErrors.assigned_to}</p>}
             </div>
 
             <div className="space-y-2">
@@ -142,6 +162,7 @@ export default function TaskFormDialog({ open, onOpenChange, task }: TaskFormDia
                 value={formData.deadline}
                 onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
               />
+              {formErrors.deadline && <p className="text-sm text-destructive">{formErrors.deadline}</p>}
             </div>
           </div>
 

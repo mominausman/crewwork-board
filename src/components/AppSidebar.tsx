@@ -1,4 +1,4 @@
-import { LayoutDashboard, CheckSquare, Users, Sparkles } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Users, Sparkles, Shield } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,12 @@ export default function AppSidebar() {
       icon: CheckSquare,
       href: "/my-tasks",
       roles: ["admin", "manager", "member"],
+    },
+    {
+      title: "User Management",
+      icon: Shield,
+      href: "/user-management",
+      roles: ["admin"],
     },
     {
       title: "Team",

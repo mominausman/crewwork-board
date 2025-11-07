@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { CheckSquare } from "lucide-react";
 import { UserRole } from "@/types";
+import { signInSchema, signUpSchema } from "@/lib/validationSchemas";
+import { z } from "zod";
 
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -15,6 +17,7 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [selectedRole, setSelectedRole] = useState<UserRole>("member");
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const { signIn, signUp, user } = useAuth();
 
@@ -26,20 +29,52 @@ export default function Auth() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await signIn(email, password);
-    if (!error) {
-      navigate("/dashboard");
+    
+    try {
+      signInSchema.parse({ email, password });
+      setFormErrors({});
+      
+      const { error } = await signIn(email, password);
+      if (!error) {
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const errors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            errors[err.path[0].toString()] = err.message;
+          }
+        });
+        setFormErrors(errors);
+      }
     }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await signUp(email, password, name, selectedRole);
-    if (!error) {
-      setIsSignUp(false);
-      setEmail("");
-      setPassword("");
-      setName("");
+    
+    try {
+      signUpSchema.parse({ name, email, password, role: selectedRole });
+      setFormErrors({});
+      
+      const { error } = await signUp(email, password, name, selectedRole);
+      if (!error) {
+        setIsSignUp(false);
+        setEmail("");
+        setPassword("");
+        setName("");
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const errors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            errors[err.path[0].toString()] = err.message;
+          }
+        });
+        setFormErrors(errors);
+      }
     }
   };
 
@@ -98,6 +133,7 @@ export default function Auth() {
                     className="h-11 bg-background/50 border-border/50 focus:border-primary focus:bg-background transition-all duration-200"
                     required
                   />
+                  {formErrors.email && <p className="text-sm text-destructive">{formErrors.email}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signin-password" className="text-sm font-medium">Password</Label>
@@ -110,6 +146,7 @@ export default function Auth() {
                     className="h-11 bg-background/50 border-border/50 focus:border-primary focus:bg-background transition-all duration-200"
                     required
                   />
+                  {formErrors.password && <p className="text-sm text-destructive">{formErrors.password}</p>}
                 </div>
                 <Button type="submit" className="w-full h-11 font-medium shadow-sm hover:shadow-md transition-all duration-200">
                   Sign In
@@ -129,6 +166,7 @@ export default function Auth() {
                     className="h-11 bg-background/50 border-border/50 focus:border-primary focus:bg-background transition-all duration-200"
                     required
                   />
+                  {formErrors.name && <p className="text-sm text-destructive">{formErrors.name}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email" className="text-sm font-medium">Email</Label>
@@ -141,6 +179,7 @@ export default function Auth() {
                     className="h-11 bg-background/50 border-border/50 focus:border-primary focus:bg-background transition-all duration-200"
                     required
                   />
+                  {formErrors.email && <p className="text-sm text-destructive">{formErrors.email}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
@@ -154,6 +193,7 @@ export default function Auth() {
                     required
                     minLength={6}
                   />
+                  {formErrors.password && <p className="text-sm text-destructive">{formErrors.password}</p>}
                 </div>
 
                 <div className="space-y-3">

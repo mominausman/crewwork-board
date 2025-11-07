@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import MyTasks from "./pages/MyTasks";
 import Team from "./pages/Team";
+import UserManagementPage from "./pages/UserManagementPage";
 import AppLayout from "./components/AppLayout";
 import NotFound from "./pages/NotFound";
 
@@ -48,6 +49,7 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/my-tasks" element={<MyTasks />} />
                 <Route path="/team" element={<Team />} />
+                <Route path="/user-management" element={<UserManagementPage />} />
               </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
