@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Upload, CheckCircle2, X, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "./ui/alert";
+import { handleError } from "@/lib/errorHandler";
 
 interface TaskCompletionDialogProps {
   open: boolean;
@@ -102,8 +103,7 @@ export default function TaskCompletionDialog({
       setCompletionNote("");
       setFile(null);
     } catch (error) {
-      console.error("Error completing task:", error);
-      toast.error("Failed to complete task. Please try again.");
+      handleError(error, "Failed to complete task. Please try again.", "Complete task");
     } finally {
       setUploading(false);
     }

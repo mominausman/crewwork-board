@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { handleErrorSilent } from "@/lib/errorHandler";
 
 interface AuthContextType {
   user: User | null;
@@ -64,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       setUserRole(data?.role || null);
     } catch (error) {
-      console.error("Error fetching user role:", error);
+      handleErrorSilent(error, "Fetch user role");
       setUserRole(null);
     }
   };

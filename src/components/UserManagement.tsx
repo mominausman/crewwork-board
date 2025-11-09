@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useApp } from "@/contexts/AppContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { handleError } from "@/lib/errorHandler";
 import { UserPlus, Trash2, Shield, Users, Search } from "lucide-react";
 import {
   Select,
@@ -163,8 +164,7 @@ export default function UserManagement() {
         fetchUserRoles();
       }, 1000);
     } catch (error: any) {
-      console.error("Error creating user:", error);
-      toast.error(error.message || "Failed to create user");
+      handleError(error, "Failed to create user. Please try again.", "Create user");
     } finally {
       setLoading(false);
     }
@@ -204,8 +204,7 @@ export default function UserManagement() {
       refreshData();
       fetchUserRoles();
     } catch (error: any) {
-      console.error("Error updating user:", error);
-      toast.error(error.message || "Failed to update user");
+      handleError(error, "Failed to update user. Please try again.", "Update user");
     } finally {
       setLoading(false);
     }
@@ -226,8 +225,7 @@ export default function UserManagement() {
       refreshData();
       fetchUserRoles();
     } catch (error: any) {
-      console.error("Error deleting user:", error);
-      toast.error(error.message || "Failed to delete user. You may need to delete from the backend.");
+      handleError(error, "Failed to delete user. You may need to delete from the backend.", "Delete user");
     } finally {
       setLoading(false);
     }

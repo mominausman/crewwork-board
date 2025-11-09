@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
 import { toast } from "sonner";
+import { handleError } from "@/lib/errorHandler";
 
 interface Profile {
   id: string;
@@ -197,8 +198,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       toast.success("Task created successfully");
     } catch (error: any) {
-      console.error("Error creating task:", error);
-      toast.error(error.message || "Failed to create task");
+      handleError(error, "Failed to create task. Please try again.", "Create task");
     }
   };
 
@@ -221,8 +221,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       toast.success("Task updated successfully");
     } catch (error: any) {
-      console.error("Error updating task:", error);
-      toast.error(error.message || "Failed to update task");
+      handleError(error, "Failed to update task. Please try again.", "Update task");
     }
   };
 
@@ -234,8 +233,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       toast.success("Task deleted successfully");
     } catch (error: any) {
-      console.error("Error deleting task:", error);
-      toast.error(error.message || "Failed to delete task");
+      handleError(error, "Failed to delete task. Please try again.", "Delete task");
     }
   };
 
@@ -247,8 +245,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       toast.success("Comment added");
     } catch (error: any) {
-      console.error("Error adding comment:", error);
-      toast.error(error.message || "Failed to add comment");
+      handleError(error, "Failed to add comment. Please try again.", "Add comment");
     }
   };
 
@@ -261,7 +258,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
     } catch (error: any) {
-      console.error("Error marking notification as read:", error);
+      handleError(error, "Failed to mark notification as read.", "Mark notification read");
     }
   };
 
