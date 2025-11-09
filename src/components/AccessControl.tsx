@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, UserPlus, Trash2, Users, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Mail, UserPlus, Trash2, Users, Shield, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
@@ -26,8 +27,14 @@ interface AllowedEmail {
   added_by: string | null;
 }
 
+interface UserRole {
+  user_id: string;
+  role: string;
+}
+
 export default function AccessControl() {
   const [allowedEmails, setAllowedEmails] = useState<AllowedEmail[]>([]);
+  const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [deleteEmailId, setDeleteEmailId] = useState<string | null>(null);
@@ -36,7 +43,31 @@ export default function AccessControl() {
 
   useEffect(() => {
     fetchAllowedEmails();
+    fetchUserRoles();
   }, []);
+
+  const fetchUserRoles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      if (error) throw error;
+      setUserRoles(data || []);
+    } catch (error) {
+      console.error("Error fetching user roles:", error);
+    }
+  };
+
+  const getUserRole = (userId: string) => {
+    return userRoles.find(ur => ur.user_id === userId)?.role;
+  };
+
+  const isAdminEmail = (email: string) => {
+    const profile = profiles.find(p => p.email === email);
+    if (!profile) return false;
+    return getUserRole(profile.id) === 'admin';
+  };
 
   const fetchAllowedEmails = async () => {
     try {
@@ -176,25 +207,42 @@ export default function AccessControl() {
             </div>
           ) : (
             <div className="space-y-2">
-              {activeUsers.map((profile) => (
-                <div
-                  key={profile.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-sm font-semibold text-primary">
-                        {profile.name?.charAt(0).toUpperCase() || "?"}
-                      </span>
+              {activeUsers.map((profile) => {
+                const role = getUserRole(profile.id);
+                return (
+                  <div
+                    key={profile.id}
+                    className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                        role === 'admin' ? 'bg-amber-500/10' : 'bg-primary/10'
+                      }`}>
+                        {role === 'admin' ? (
+                          <Crown className="h-5 w-5 text-amber-500" />
+                        ) : (
+                          <span className="text-sm font-semibold text-primary">
+                            {profile.name?.charAt(0).toUpperCase() || "?"}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{profile.name}</p>
+                          {role === 'admin' && (
+                            <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/20">
+                              <Crown className="h-3 w-3 mr-1" />
+                              Admin
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{profile.email}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{profile.name}</p>
-                      <p className="text-sm text-muted-foreground">{profile.email}</p>
-                    </div>
+                    <div className="h-2 w-2 rounded-full bg-green-500" title="Active" />
                   </div>
-                  <div className="h-2 w-2 rounded-full bg-green-500" title="Active" />
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -220,15 +268,28 @@ export default function AccessControl() {
             <div className="space-y-2">
               {allowedEmails.map((item) => {
                 const isActive = activeUsers.some(u => u.email === item.email);
+                const isAdmin = isAdminEmail(item.email);
                 return (
                   <div
                     key={item.id}
                     className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">{item.email}</p>
+                    <div className="flex items-center gap-3 flex-1">
+                      {isAdmin ? (
+                        <Crown className="h-4 w-4 text-amber-500" />
+                      ) : (
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{item.email}</p>
+                          {isAdmin && (
+                            <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 text-xs">
+                              <Crown className="h-2.5 w-2.5 mr-1" />
+                              Admin
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           Added {new Date(item.created_at).toLocaleDateString()}
                         </p>
@@ -245,6 +306,8 @@ export default function AccessControl() {
                         size="sm"
                         onClick={() => setDeleteEmailId(item.id)}
                         className="hover:bg-destructive/10 hover:text-destructive"
+                        disabled={isAdmin}
+                        title={isAdmin ? "Admin emails cannot be removed" : "Remove email"}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
