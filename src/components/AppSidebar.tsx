@@ -26,12 +26,6 @@ export default function AppSidebar() {
       roles: ["admin"],
     },
     {
-      title: "User Management",
-      icon: Shield,
-      href: "/user-management",
-      roles: ["admin"],
-    },
-    {
       title: "Team",
       icon: Users,
       href: "/team",

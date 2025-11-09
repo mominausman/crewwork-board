@@ -209,32 +209,48 @@ export default function AccessControl() {
             <div className="space-y-2">
               {activeUsers.map((profile) => {
                 const role = getUserRole(profile.id);
+                const roleConfig = {
+                  admin: { 
+                    label: 'Admin', 
+                    icon: Crown, 
+                    bgColor: 'bg-amber-500/10', 
+                    textColor: 'text-amber-700',
+                    iconColor: 'text-amber-500'
+                  },
+                  manager: { 
+                    label: 'Manager', 
+                    icon: Shield, 
+                    bgColor: 'bg-blue-500/10', 
+                    textColor: 'text-blue-700',
+                    iconColor: 'text-blue-500'
+                  },
+                  member: { 
+                    label: 'Member', 
+                    icon: Users, 
+                    bgColor: 'bg-primary/10', 
+                    textColor: 'text-primary',
+                    iconColor: 'text-primary'
+                  }
+                };
+                const config = roleConfig[role as keyof typeof roleConfig] || roleConfig.member;
+                const RoleIcon = config.icon;
+
                 return (
                   <div
                     key={profile.id}
                     className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
                   >
                     <div className="flex items-center gap-3 flex-1">
-                      <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                        role === 'admin' ? 'bg-amber-500/10' : 'bg-primary/10'
-                      }`}>
-                        {role === 'admin' ? (
-                          <Crown className="h-5 w-5 text-amber-500" />
-                        ) : (
-                          <span className="text-sm font-semibold text-primary">
-                            {profile.name?.charAt(0).toUpperCase() || "?"}
-                          </span>
-                        )}
+                      <div className={`h-10 w-10 rounded-full flex items-center justify-center ${config.bgColor}`}>
+                        <RoleIcon className={`h-5 w-5 ${config.iconColor}`} />
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium">{profile.name}</p>
-                          {role === 'admin' && (
-                            <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/20">
-                              <Crown className="h-3 w-3 mr-1" />
-                              Admin
-                            </Badge>
-                          )}
+                          <Badge variant="secondary" className={`${config.bgColor} ${config.textColor} hover:${config.bgColor}`}>
+                            <RoleIcon className="h-3 w-3 mr-1" />
+                            {config.label}
+                          </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">{profile.email}</p>
                       </div>
@@ -268,25 +284,47 @@ export default function AccessControl() {
             <div className="space-y-2">
               {allowedEmails.map((item) => {
                 const isActive = activeUsers.some(u => u.email === item.email);
-                const isAdmin = isAdminEmail(item.email);
+                const profile = profiles.find(p => p.email === item.email);
+                const role = profile ? getUserRole(profile.id) : null;
+                
+                const roleConfig = {
+                  admin: { 
+                    label: 'Admin', 
+                    icon: Crown, 
+                    bgColor: 'bg-amber-500/10', 
+                    textColor: 'text-amber-700'
+                  },
+                  manager: { 
+                    label: 'Manager', 
+                    icon: Shield, 
+                    bgColor: 'bg-blue-500/10', 
+                    textColor: 'text-blue-700'
+                  },
+                  member: { 
+                    label: 'Member', 
+                    icon: Users, 
+                    bgColor: 'bg-primary/10', 
+                    textColor: 'text-primary'
+                  }
+                };
+                const config = role ? roleConfig[role as keyof typeof roleConfig] : null;
+                const RoleIcon = config?.icon || Mail;
+                const iconColor = config ? (role === 'admin' ? 'text-amber-500' : role === 'manager' ? 'text-blue-500' : 'text-primary') : 'text-muted-foreground';
+
                 return (
                   <div
                     key={item.id}
                     className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
                   >
                     <div className="flex items-center gap-3 flex-1">
-                      {isAdmin ? (
-                        <Crown className="h-4 w-4 text-amber-500" />
-                      ) : (
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                      )}
+                      <RoleIcon className={`h-4 w-4 ${iconColor}`} />
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium">{item.email}</p>
-                          {isAdmin && (
-                            <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 text-xs">
-                              <Crown className="h-2.5 w-2.5 mr-1" />
-                              Admin
+                          {config && (
+                            <Badge variant="secondary" className={`${config.bgColor} ${config.textColor} hover:${config.bgColor} text-xs`}>
+                              <RoleIcon className="h-2.5 w-2.5 mr-1" />
+                              {config.label}
                             </Badge>
                           )}
                         </div>
@@ -306,8 +344,8 @@ export default function AccessControl() {
                         size="sm"
                         onClick={() => setDeleteEmailId(item.id)}
                         className="hover:bg-destructive/10 hover:text-destructive"
-                        disabled={isAdmin}
-                        title={isAdmin ? "Admin emails cannot be removed" : "Remove email"}
+                        disabled={role === 'admin'}
+                        title={role === 'admin' ? "Admin emails cannot be removed" : "Remove email"}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
