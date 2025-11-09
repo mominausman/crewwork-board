@@ -27,10 +27,11 @@ interface TaskCardProps {
 }
 
 export default function TaskCard({ task, onClick, onEdit }: TaskCardProps) {
-  const { userRole } = useAuth();
+  const { userRole, user } = useAuth();
   const { deleteTask, profiles } = useApp();
 
-  const canEdit = userRole === "admin" || userRole === "manager";
+  // Admins can edit all tasks, managers can only edit tasks they created
+  const canEdit = userRole === "admin" || (userRole === "manager" && task.created_by === user?.id);
   const assignedUser = profiles.find((u) => u.id === task.assigned_to);
 
   const statusColors = {
