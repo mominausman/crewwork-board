@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      allowed_emails: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          email: string
+          id?: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           content: string
@@ -179,6 +200,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_email_allowed: { Args: { user_email: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "manager" | "member"

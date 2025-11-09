@@ -71,6 +71,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, name: string, role: string) => {
+    // Check if email is allowed
+    try {
+      const { data, error: checkError } = await supabase.rpc('is_email_allowed', { 
+        user_email: email.toLowerCase() 
+      });
+
+      if (checkError) throw checkError;
+
+      if (!data) {
+        toast.error("Access restricted. Please contact your Admin for permission to join the workspace.", {
+          duration: 5000,
+        });
+        return { error: new Error("Email not allowed") };
+      }
+    } catch (error) {
+      console.error("Error checking email:", error);
+      toast.error("Unable to verify email access. Please try again.");
+      return { error: error as Error };
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -93,6 +113,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    // Check if email is allowed
+    try {
+      const { data, error: checkError } = await supabase.rpc('is_email_allowed', { 
+        user_email: email.toLowerCase() 
+      });
+
+      if (checkError) throw checkError;
+
+      if (!data) {
+        toast.error("Access restricted. Please contact your Admin for permission to join the workspace.", {
+          duration: 5000,
+        });
+        return { error: new Error("Email not allowed") };
+      }
+    } catch (error) {
+      console.error("Error checking email:", error);
+      toast.error("Unable to verify email access. Please try again.");
+      return { error: error as Error };
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
