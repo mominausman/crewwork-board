@@ -46,6 +46,13 @@ export default function AccessControl() {
     fetchUserRoles();
   }, []);
 
+  useEffect(() => {
+    // Refetch roles when profiles change
+    if (profiles.length > 0) {
+      fetchUserRoles();
+    }
+  }, [profiles]);
+
   const fetchUserRoles = async () => {
     try {
       const { data, error } = await supabase
@@ -60,11 +67,16 @@ export default function AccessControl() {
   };
 
   const getUserRole = (userId: string) => {
-    return userRoles.find(ur => ur.user_id === userId)?.role;
+    const role = userRoles.find(ur => ur.user_id === userId)?.role;
+    return role;
+  };
+
+  const getProfileByEmail = (email: string) => {
+    return profiles.find(p => p.email?.toLowerCase() === email.toLowerCase());
   };
 
   const isAdminEmail = (email: string) => {
-    const profile = profiles.find(p => p.email === email);
+    const profile = getProfileByEmail(email);
     if (!profile) return false;
     return getUserRole(profile.id) === 'admin';
   };
@@ -283,8 +295,8 @@ export default function AccessControl() {
           ) : (
             <div className="space-y-2">
               {allowedEmails.map((item) => {
-                const isActive = activeUsers.some(u => u.email === item.email);
-                const profile = profiles.find(p => p.email === item.email);
+                const isActive = activeUsers.some(u => u.email?.toLowerCase() === item.email.toLowerCase());
+                const profile = getProfileByEmail(item.email);
                 const role = profile ? getUserRole(profile.id) : null;
                 
                 const roleConfig = {
