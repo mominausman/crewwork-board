@@ -195,18 +195,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
-      // Create notification for assigned user
-      const assignedProfile = profiles.find((p) => p.id === task.assigned_to);
-      if (assignedProfile) {
-        await supabase.from("notifications").insert([
-          {
-            user_id: task.assigned_to,
-            message: `New task "${task.title}" assigned to you`,
-            type: "task-created",
-          },
-        ]);
-      }
-
       toast.success("Task created successfully");
     } catch (error: any) {
       console.error("Error creating task:", error);
@@ -230,20 +218,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         .eq("id", id);
 
       if (error) throw error;
-
-      // Create notification for status change
-      if (updates.status === "completed") {
-        const task = tasks.find((t) => t.id === id);
-        if (task) {
-          await supabase.from("notifications").insert([
-            {
-              user_id: task.created_by,
-              message: `Task "${task.title}" has been completed`,
-              type: "task-completed",
-            },
-          ]);
-        }
-      }
 
       toast.success("Task updated successfully");
     } catch (error: any) {
